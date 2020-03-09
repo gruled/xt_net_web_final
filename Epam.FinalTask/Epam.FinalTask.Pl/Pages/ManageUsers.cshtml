@@ -1,0 +1,194 @@
+﻿@using System.Collections
+@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    IEnumerable<Epam.FinalTask.Entities.User> users = new List<User>();
+    if (!User.Identity.IsAuthenticated)
+    {
+        Page.Title = "Registration";   
+    }
+    else
+    {
+        Page.Title = "Manage users";
+        try
+        {
+            users = DependencyResolver.UserBll.GetAllUsers();
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Get all users error",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+    }
+    Layout = "~/Layouts/_MainLayout.cshtml";
+    
+}
+@RenderPage("~/Partials/_filter.cshtml")
+<div class="userItem">
+    <div><label class="inlineItem text">Create new user</label></div>
+    <form id="createUser" action="~/Pages/CreateUser.cshtml" method="post">
+        <div style="margin: 5px auto"><label class="inlineItem text">Login:</label><input class="inputType" style="margin-left: 41px; max-width: 601px;" type="text" name="login" size="100" required placeholder="Minimum 6 letters" pattern=".{6,}" /></div>
+        <div style="margin: 5px auto"><label class="inlineItem text">Password:</label><input style="margin-left: 10px; max-width: 601px;" type="password" name="password" size="100" required placeholder="Minimum 6 letters" pattern=".{6,}" /></div>
+        <div style="margin: 5px auto"><label class="inlineItem text">Name:</label><input style="margin-left: 37px; max-width: 602px;" type="text" name="name" size="100" placeholder="Required non empty field" pattern=".+" /></div>
+        <div style="margin: 5px auto"><label class="inlineItem text">Description:</label><textarea class="inputType" style="vertical-align: top; min-width: 600px; max-width: 600px; min-height: 25px;" name="description"></textarea></div>
+        <div style="margin: 5px 5px;"><input type="submit"class="buttonSubmit" value="CREATE" /></div>
+    </form>
+    <script>
+        $('#createUser').submit(function (e) {
+            e.preventDefault();
+            var $form = $(this);
+
+            $.ajax({
+                type: $form.attr('method'),
+                url: 'CreateUser',
+                data: $form.serialize(),
+                success: function (response) {
+                    if (response === 'ok') {
+                        location.href = '/index';
+                    } else {
+                        var newDiv = document.createElement('div');
+                        newDiv.innerHTML = '<label class="inlineItem text">This login already exist' + response + '</label>';
+                        var el = document.getElementById('createUser');
+                        el.append(newDiv);
+                    }
+                }
+            });
+        });
+    </script>
+</div>
+@if (User.Identity.IsAuthenticated)
+{
+    foreach (var user in users)
+    {
+        if (User.IsInRole("admin") || user.Id == DependencyResolver.UserBll.GetUserIdByLogin(User.Identity.Name))
+        {
+            <div id="@user.Id" class="userItem">
+                <div style="margin: 0 auto;"><label class="inlineItem text left">Name:</label><div class="inlineItem text" style="margin-left: 35px;">@user.Name</div></div>
+                @if (!string.IsNullOrEmpty(user.Description))
+                {
+                    <div><label class="inlineItem text">Description:</label><div class="inlineItem text" style="margin-left: -3px;">@user.Description</div></div>
+                }
+                <div><label class="inlineItem text">Registered:</label><div class="inlineItem text">@user.RegistrationDate.ToShortDateString()</div></div>
+                @if (user.Verified)
+                {
+                    <div>
+                        <label class="inlineItem text">Verified:     yes</label>
+                    </div>
+                }
+                else
+                {
+
+                    if (User.IsInRole("admin"))
+                    {
+                        string divId = "setVerify" + user.Id;
+                        <div>
+                            <label class="inlineItem text" id="@divId">Verified: no</label>
+                        </div>
+                        string id = "verify" + user.Id;
+                        <button id="@id" class="buttonSubmit" style="margin: 5px 5px;" type="submit">VERIFY</button>
+                        <script>
+                $('#@id').click(function() {
+                    $.ajax({
+                        type:'POST',
+                        method: 'POST',
+                        url: 'VerifyUser.cshtml',
+                        data: {
+                            id:'@user.Id'
+                        },
+                        success:
+                            function (response) {
+                                if (response === 'ok') {
+                                    document.getElementById('@divId').innerHTML = 'Verified: yes';
+                                }
+                            }
+                    });
+                });
+                        </script>
+                    }
+                }
+
+
+                <form method="post" action="UpdateUser.cshtml" style="margin: 5px 5px;">
+                    <input type="text" name="id" value="@user.Id" hidden />
+                    <input type="submit" class="buttonSubmit" value="UPDATE" />
+                </form>
+
+
+                @{
+                    if (User.IsInRole("admin"))
+                    {
+                        IEnumerable<Role> roles = new List<Role>();
+                        try
+                        {
+                            roles = DependencyResolver.RoleBll.GetAllRoles();
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Log.Error("Get all roles error",e);
+                            Response.Redirect("~/Pages/ErrorPage.cshtml");
+                        }
+                        if (roles.Any())
+                        {
+                            string idChangeRole = "changeRole" + user.Id;
+                            <form id="@idChangeRole" style="margin: 5px 5px;">
+                                <input type="text" name="id" value="@user.Id" hidden />
+                                <select class="buttonSubmit" style="margin-top: 5px;" name="role" id="">
+                                    @foreach (var role in roles)
+                                    {
+                                        if (user.Role == role.Id)
+                                        {
+                                            <option value="@role.Id" selected>@role.Title.ToUpper()</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@role.Id">@role.Title.ToUpper()</option>
+                                        }
+                                    }
+                                </select>
+                                <input class="buttonSubmit" style="margin-left: 10px;" type="submit" value="CHANGE ROLE" />
+                            </form>
+                            <script>
+                    $('#@idChangeRole').submit(function(e) {
+                        e.preventDefault();
+                        var $form = $(this);
+                        $.ajax({
+                            type: $form.attr('method'),
+                            url: 'ChangeRole',
+                            data: $form.serialize(),
+                            success: function (response) {
+                            }
+                        });
+                    });
+                            </script>
+                        }
+                    }
+
+
+                }
+
+                @{ string s = "delete" + user.Id;}
+                <input id="@s" class="buttonSubmit" style="margin: 5px 5px;" type="button" value="DELETE" />
+                <script>
+            $('#@s').click(function() {
+                var userNode =@user.Id;
+                $.ajax({
+                    type:'POST',
+                    method: 'POST',
+                    url: '/Pages/DeleteUser.cshtml',
+                    data: { id: userNode },
+                    success: [
+                        function() {
+                            document.getElementById(userNode).remove();
+                        }
+                    ]
+                });
+            });
+                </script>
+            </div>
+        }
+
+
+    }
+}
+

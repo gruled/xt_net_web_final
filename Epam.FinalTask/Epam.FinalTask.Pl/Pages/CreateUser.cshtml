@@ -1,0 +1,37 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        var userName = Request["name"];
+        var login = Request["login"];
+        if (userName!=null&& login!=null &&!DependencyResolver.UserBll.IsUserExist(login))
+        {
+            try
+            {
+                DependencyResolver.UserBll.AddUser(new User()
+                {
+                    Login = login,
+                    Password = Tools.Cryptography.Encode(Request["password"]),
+                    Name = userName,
+                    Description = Request["description"],
+                    Role = 1,
+                    RegistrationDate = DateTime.Now,
+                    Verified = false
+                });
+                FormsAuthentication.SetAuthCookie(login, true);
+            }
+            catch (Exception e)
+            {
+                Logger.Log.Error("Create user error",e);
+            }
+            
+            Response.Write("ok");
+        }
+        else
+        {
+            Response.Write("notOk");
+        }
+    }
+}

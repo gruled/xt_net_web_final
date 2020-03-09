@@ -1,0 +1,19 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        try
+        {
+            int id = int.Parse(Request["id"]);
+            DependencyResolver.UserBll.VerifyUserById(id);
+            Response.Write("ok");
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Verify user by id error",e);
+            Response.Write("not ok");
+        }
+
+    }
+}

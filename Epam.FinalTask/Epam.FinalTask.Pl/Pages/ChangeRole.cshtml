@@ -1,0 +1,19 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        int id =int.Parse(Request["id"]);
+        int roleId = int.Parse(Request["role"]);
+        try
+        {
+            DependencyResolver.UserBll.UpdateUserRoleById(id, roleId);
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("UpdateUserRoleById", e);
+            Response.Write("not ok");
+        }
+        Response.Write("ok");
+    }
+}

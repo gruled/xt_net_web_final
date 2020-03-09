@@ -1,0 +1,59 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        var userId = int.Parse(Request["id"]);
+        var userLogin = Request["login"];
+        var userPassword = Request["password"];
+        var userName = Request["name"];
+        var userDescription = Request["description"];
+        User updatedUser = new User();
+        try
+        {
+            updatedUser = DependencyResolver.UserBll.GetUserById(userId);
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error($"Get user by id error (id={userId})",e);
+            Response.Write("nor ok");
+        }
+        var correctPassword = "";
+        if (userPassword.Equals(updatedUser.Password))
+        {
+            correctPassword = userPassword;
+        }
+        else
+        {
+            try
+            {
+                correctPassword = Tools.Cryptography.Encode(userPassword);
+            }
+            catch (Exception e)
+            {
+                Logger.Log.Error("Encode user password error",e);
+                Response.Write("nor ok");
+            }
+        }
+        try
+        {
+            DependencyResolver.UserBll.UpdateUserById(userId, new User()
+            {
+                Login = userLogin,
+                Password = correctPassword,
+                Name = userName,
+                Description = userDescription,
+                Role = updatedUser.Role,
+                RegistrationDate = updatedUser.RegistrationDate,
+                Verified = updatedUser.Verified,
+            });
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error($"Update user by id error (id={userId})",e);
+            Response.Write("not ok");
+        }
+        Response.Write("ok");
+    }
+}

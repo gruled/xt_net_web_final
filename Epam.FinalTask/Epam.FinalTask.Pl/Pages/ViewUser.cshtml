@@ -1,0 +1,82 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    int id = 0;
+    if (Request["view"]!=null)
+    {
+        id = int.Parse(Request["view"]);
+    }
+    Epam.FinalTask.Entities.User currentUser = new User();
+    try
+    {
+        currentUser =  DependencyResolver.UserBll.GetUserById(id);
+    }
+    catch (Exception e)
+    {
+        Logger.Log.Error($"Get user by id error (id={id})",e);
+        Response.Redirect("~/Pages/ErrorPage.cshtml");
+    }
+    Page.Title = "User "+currentUser.Name;
+    Layout = "~/Layouts/_MainLayout.cshtml";
+}
+
+    <div class="userItem">
+        <div><label class="inlineItem text">View user data</label></div>
+        <div style="margin: 0 auto;">
+            <label class="inlineItem text left">Name:</label>
+            <div class="inlineItem text">@currentUser.Name</div>
+        </div>
+        @if (!string.IsNullOrEmpty(currentUser.Description))
+        {
+            <div>
+                <label class="inlineItem text">Description:</label>
+                <div class="inlineItem text">@currentUser.Description</div>
+            </div>
+        }
+        <div>
+            <label class="inlineItem text">Registered:</label>
+            <div class="inlineItem text">@currentUser.RegistrationDate.ToShortDateString()</div>
+        </div>
+        @if (currentUser.Verified)
+        {
+            <div>
+                <label class="inlineItem text">Verified: yes</label>
+            </div>
+        }
+
+        @{
+            IEnumerable<Asset> assets = new List<Asset>();
+            try
+            {
+                if (User.IsInRole("admin"))
+                {
+                    assets = DependencyResolver.AssetBll.GetAllAssets().Where(item => item.Parent == id);
+                }
+                else
+                {
+                    assets = DependencyResolver.AssetBll.GetAllModeratedAssets().Where(item => item.Parent == id);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Log.Error("Get assets error",e);
+            }
+        }
+        <div><label class="inlineItem text">Assets by @currentUser.Name :</label></div>
+        @foreach (var asset in assets)
+        {
+            string assetLinkId = "asset" + asset.Id;
+            <div><label class="inlineItem text"><button class="buttonSubmit" id="@assetLinkId" style="margin: 5px auto;">@asset.Title</button></label></div>
+            <script>
+                $('#@assetLinkId').click(function() {
+                    var form = document.createElement('form');
+                    form.action = 'ViewAsset';
+                    form.method = 'POST';
+                    form.innerHTML = '<input type="text" hidden name="id" value="@asset.Id"/>';
+                    document.body.append(form);
+                    form.submit();
+                });
+            </script>                                                                                         
+        }
+    </div>

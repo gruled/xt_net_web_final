@@ -1,0 +1,17 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        try
+        {
+            var id = int.Parse(Request["id"]);
+            DependencyResolver.TagBll.DeleteTagById(id);
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Delete tag error",e);
+        }
+        
+    }
+}

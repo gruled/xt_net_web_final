@@ -1,0 +1,13 @@
+﻿@using Epam.FinalTask.Pl.Models
+@{
+    try
+    {
+        FormsAuthentication.SignOut();
+    }
+    catch (Exception e)
+    {
+        Logger.Log.Error("Sign out error",e);
+        Response.Redirect("~/Pages/ErrorPage.cshtml");
+    }
+    Response.Redirect("~");
+}

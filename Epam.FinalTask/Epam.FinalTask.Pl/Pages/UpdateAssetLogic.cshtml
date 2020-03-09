@@ -1,0 +1,113 @@
+﻿@using System.IO.Compression
+@using System.Runtime.InteropServices
+@using System.Text
+@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsPost)
+    {
+        int assetId = int.Parse(Request["id"]);
+        Asset currentAsset =new Asset();
+        try
+        {
+            currentAsset = DependencyResolver.AssetBll.GetAssetById(assetId);
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error($"Get asset by id error (id={assetId})",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+        string title = Request["title"];
+        string version = Request["version"];
+        string description = Request["description"];
+        string license = Request["license"];
+        string patchNote = Request["patchNote"];
+        var parent = int.Parse(Request["parent"]);
+        StringBuilder hierarchy = new StringBuilder();
+        var fileName = "";
+        int sise = 0;
+        var file = Request.Files["file"];
+        try
+        {
+            if (file.ContentLength>0)
+            {
+                file = Request.Files["file"];
+                fileName = Guid.NewGuid().ToString();
+                var fileSavePath = Server.MapPath("~/Data/" + fileName+".zip");
+                file.SaveAs(fileSavePath);
+                sise = file.ContentLength;
+                using (ZipArchive archive = ZipFile.OpenRead(fileSavePath))
+                {
+                    foreach (ZipArchiveEntry entry in archive.Entries)
+                    {
+                        hierarchy.Append($"{entry.Name}{Environment.NewLine}");
+                    }
+                }
+                if (currentAsset.Path!=null)
+                {
+                    File.Delete(Server.MapPath("~/Data/")+currentAsset.Path);   
+                }
+                fileName = fileName + ".zip";
+            }
+            else
+            {
+                fileName = currentAsset.Path;
+                sise = currentAsset.Size;
+                hierarchy =new StringBuilder(currentAsset.Hierarchy);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error($"zip file error (file name={fileName})",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+
+        try
+        {
+            DependencyResolver.AssetBll.UpdateAssetById(assetId, new Asset()
+            {
+                Title = title,
+                Description = description,
+                License = license,
+                Parent = parent,
+                Path = fileName,
+                Moderated = false,
+                Size = sise,
+                Version = version,
+                PatchNote = patchNote,
+                Hierarchy = hierarchy.ToString()
+            });
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error($"Update asset error (id={assetId})",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+        
+        var a = WebImage.GetImageFromRequest("image");
+        if (a!=null)
+        {
+            try
+            {
+                DependencyResolver.AssetsAndImagesLinksBll.DeleteLinkByAssetId(assetId);
+                var image = a;
+                var imageId = DependencyResolver.ImageBll.AddImage(new Image() {Data = image.GetBytes()});
+                DependencyResolver.AssetsAndImagesLinksBll.AddLink(assetId, imageId);
+            }
+            catch (Exception e)
+            {
+                Logger.Log.Error("update image error",e);
+                Response.Redirect("~/Pages/ErrorPage.cshtml");
+            }
+        }
+
+        var tags =  Request.Form.GetValues("tags[]");
+        DependencyResolver.AssetsAndTagsLinksBll.DeleteLinkByAssetId(assetId);
+        foreach (var tag in tags)
+        {
+            DependencyResolver.AssetsAndTagsLinksBll.AddLink(assetId, int.Parse(tag));
+        }
+    }
+    Response.Redirect("~/index.cshtml");
+}

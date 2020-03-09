@@ -1,0 +1,43 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Pl.Models
+@{
+    var error = false;
+    if (IsPost)
+    {
+        var login = Request["login"];
+        var password = Request["password"];
+        try
+        {
+            if (DependencyResolver.UserBll.IsEntryExist(login, Tools.Cryptography.Encode(password)))
+            {
+                var user = DependencyResolver.UserBll.GetUserById(DependencyResolver.UserBll.GetUserIdByLogin(login));
+                FormsAuthentication.SetAuthCookie(user.Login, true);
+                Tools.Variables.UserId = user.Id;
+            }
+            else
+            {
+                error = true;
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("signIn error",e);
+        }
+        Response.Redirect("~");
+    }
+
+    Page.Title = "SignIn";
+    Layout = "~/Layouts/_MainLayout.cshtml";
+}
+<div class="userItem">
+        <div><label class="inlineItem text">SignIn</label></div>
+        @if (error)
+        {
+            <div><label class="inlineItem text">This login or password not exist in database</label></div>
+        }
+        <form action="~/Pages/SignIn.cshtml" method="post">
+            <div style="margin: 5px auto"><label class="inlineItem text">Login:</label><input style="margin-left: 41px; max-width: 601px;" type="text" name="login" size="100" required placeholder="Minimum 6 letters" pattern=".+" /></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Password:</label><input style="margin-left: 10px; max-width: 601px;" type="password" name="password" size="100" required placeholder="Minimum 6 letters" pattern=".+" /></div>
+            <div style="margin: 5px 5px;"><input class="buttonSubmit" type="submit" value="SIGN IN" /></div>
+        </form>
+    </div>

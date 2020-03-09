@@ -1,0 +1,37 @@
+﻿@if (User.Identity.IsAuthenticated)
+{
+    <div class="filter">
+        @if (User.IsInRole("admin"))
+        {
+            <div class="filterItem" id="manageTag">
+                <h3 class="filterItemText">MANAGE TAGS</h3>
+            </div>
+            <script>
+                $('#manageTag').click(function () {
+                    location.href = '/Pages/ManageTag';
+                });
+            </script>
+        }
+    <div class="filterItem" id="manageUser">
+        @if (User.IsInRole("user"))
+        {
+            <h3 class="filterItemText">USER SETTINGS</h3>
+        }
+        else
+        {
+            <h3 class="filterItemText">MANAGE USERS</h3>
+        }
+    </div>
+        <div class="filterItem" id="manageAsset">
+            <h3 class="filterItemText">MANAGE ASSETS</h3>
+        </div>
+    </div>
+    <script>
+        $('#manageUser').click(function () {
+            location.href = '/Pages/ManageUsers';
+        });
+        $('#manageAsset').click(function () {
+            location.href = '/Pages/ManageAsset';
+        });
+    </script>
+}

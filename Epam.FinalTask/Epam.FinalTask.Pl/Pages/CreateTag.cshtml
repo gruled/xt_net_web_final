@@ -1,0 +1,20 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsPost)
+    {
+        try
+        {
+            DependencyResolver.TagBll.AddTag(new Tag()
+            {
+                Title = Request["title"]
+            });
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Create tag error",e);
+        }
+    }
+    Response.Redirect("~/Pages/ManageTag");
+}

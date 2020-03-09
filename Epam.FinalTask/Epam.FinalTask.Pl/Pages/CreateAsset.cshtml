@@ -1,0 +1,91 @@
+﻿@using System.Diagnostics
+@using System.IO.Compression
+@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using System.Text
+@using Epam.FinalTask.Pl
+@using Epam.FinalTask.Pl.Models
+
+@{
+    if (IsPost)
+    {
+        var title = Request["title"];
+        var version = Request["version"];
+        var description = Request["description"];
+        var license = Request["license"];
+        var patchNote = Request["patchNote"];
+        var file = Request.Files["file"];
+        var size = file.ContentLength;
+        var parent = int.Parse(Request["id"]);
+        StringBuilder hierarchy = new StringBuilder();
+        int assetId = 0;
+        var fileName = Guid.NewGuid().ToString();
+        var fileSavePath = Server.MapPath("~/Data/" + fileName+".zip");
+        file.SaveAs(fileSavePath);
+
+        try
+        {
+            using (ZipArchive archive = ZipFile.OpenRead(fileSavePath))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    hierarchy.Append($"{entry.Name}{Environment.NewLine}");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Zip file error", e);
+            hierarchy = new StringBuilder();
+        }
+
+
+        try
+        {
+            assetId = DependencyResolver.AssetBll.AddAsset(new Asset()
+            {
+                Title = title,
+                Description = description,
+                Version = version,
+                License = license,
+                Path = fileName+".zip",
+                Moderated = false,
+                Size = size,
+                PatchNote = patchNote,
+                Hierarchy = hierarchy.ToString(),
+                Parent = parent
+            });
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Create asset error",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+
+
+        try
+        {
+            var image = WebImage.GetImageFromRequest("image");
+            var imageId = DependencyResolver.ImageBll.AddImage(new Image() {Data = image.GetBytes()});
+            DependencyResolver.AssetsAndImagesLinksBll.AddLink(assetId, imageId);
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Upload image error",e);
+        }
+
+        try
+        {
+            var tags = Request.Form.GetValues("tags[]");
+            foreach (var tag in tags)
+            {
+                DependencyResolver.AssetsAndTagsLinksBll.AddLink(assetId, int.Parse(tag));
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Link tag and asset error",e);
+        }
+    }
+    Response.Redirect("~/index.cshtml");
+}

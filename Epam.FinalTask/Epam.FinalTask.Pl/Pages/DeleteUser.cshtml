@@ -1,0 +1,16 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        try
+        {
+            DependencyResolver.UserBll.DeleteById(int.Parse(Request["id"]));
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Delete user error",e);
+        }
+        
+    }
+}

@@ -1,0 +1,52 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    Page.Title = "Update user";
+    Layout = "~/Layouts/_MainLayout.cshtml";
+    User currentUser = new User();
+    if (IsPost)
+    {
+        try
+        {
+            int userId = int.Parse(Request["id"]);
+            currentUser = DependencyResolver.UserBll.GetUserById(userId);
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error($"Get user by id error ",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+    }
+}
+@RenderPage("~/Partials/_filter.cshtml")
+    <div class="userItem">
+        <div><label class="inlineItem text">Create new user</label></div>
+        <form id="createUser" method="post">
+            <input type="text" value="@currentUser.Id" name="id" hidden/>
+            <div style="margin: 5px auto"><label class="inlineItem text">Login:</label><input value="@currentUser.Login" style="margin-left: 41px; max-width: 601px;" type="text" name="login" size="100" required placeholder="Minimum 6 letters" pattern=".{6,}"/></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Password:</label><input value="@currentUser.Password" style="margin-left: 10px; max-width: 601px;" type="password" name="password" size="100" required placeholder="Minimum 6 letters" pattern=".{6,}"/></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Name:</label><input value="@currentUser.Name" style="margin-left: 37px; max-width: 602px;" type="text" name="name" size="100" placeholder="Required non empty field" pattern=".+"/></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Description:</label><textarea style="vertical-align: top; min-width: 600px; max-width: 600px; min-height: 25px;" name="description">@currentUser.Description</textarea></div>
+            <div style="margin: 5px 5px;"><input class="buttonSubmit" type="submit" value="UPDATE"/></div>
+        </form>
+        <script>
+        $('#createUser').submit(function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            $.ajax({
+                type: $form.attr('method'),
+                url: 'UpdateUserAjax',
+                data: $form.serialize(),
+                success: function (response) {
+                    if (response === 'ok') {
+                        var newDiv = document.createElement('div');
+                        newDiv.innerHTML = '<label class="inlineItem text">User updated</label>';
+                        var el = document.getElementById('createUser');
+                        el.append(newDiv);
+                    }
+                }
+            });
+        });
+        </script>
+    </div>

@@ -1,0 +1,64 @@
+﻿@using System.Diagnostics
+@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    Page.Title = "Asset vault";
+    Layout = "~/Layouts/_MainLayout.cshtml";
+    
+}
+@RenderPage("~/Partials/_filter.cshtml")
+
+@{
+
+    IEnumerable<Asset> assets =null;
+    if (User.IsInRole("admin"))
+    {
+        assets = DependencyResolver.AssetBll.GetAllAssetsMin();
+    }
+    else
+    {
+        assets = DependencyResolver.AssetBll.GetAllModeratedAssetsMin();
+    }
+    string search = "";
+    if (IsPost)
+    {
+        search = Request["se"];
+        assets = assets.Where(item => item.Title.ToLower().Contains(search.ToLower()));
+    }
+
+    if (assets.Any())
+    {
+        <div class="userItem" style="text-align: center;">
+            @foreach (var asset in assets)
+            {
+                var image = DependencyResolver.ImageBll.GetImageById(DependencyResolver.AssetsAndImagesLinksBll.GetAllLinksByAssetId(asset.Id).FirstOrDefault().ImageId);
+                string divId = "asset" + asset.Id;
+
+                <div id="@divId" style="text-align: center; cursor: pointer; width: 330px;  display: inline-block;  vertical-align:top; margin: 20px 10px;">
+                    @if (image.Data != null)
+                    {
+                        <img style="max-width: 100%; border-radius: 5px; max-height: 180px;" src="Data:image/png;base64,@Convert.ToBase64String(image.Data)" />
+                    }
+                    else
+                    {
+                        <img style="max-width: 100%; border-radius: 5px; max-height: 180px;" src="Data/back.jpg" />
+                    }
+                    <div class="assetItemText">@asset.Title</div>
+                </div>
+                <script>
+                    $('#@divId').click(function() {
+                        var form = document.createElement('form');
+                        form.action = 'Pages/ViewAsset';
+                        form.method = 'POST';
+                        form.innerHTML = '<input type="text" hidden name="id" value="@asset.Id"/>';
+                        document.body.append(form);
+                        form.submit();
+                    });
+                </script>
+            }
+        </div>
+    }
+    
+}
+

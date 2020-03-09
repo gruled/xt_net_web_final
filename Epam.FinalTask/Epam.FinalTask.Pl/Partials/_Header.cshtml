@@ -1,0 +1,36 @@
+﻿@using Epam.FinalTask.DependencyResolver
+<div class="header">
+    <div class="name iTitle AppName" style="cursor: pointer; max-width: 150px; color: white;" id="main">ASSET VAULT</div>
+    <form class="name iSearch" method="post" action="~/index.cshtml">
+        <input class="search" type="search" name="se" size="100" placeholder="Type name or part of name"/>
+    </form>
+    <div class="name iSignIn">
+        @if (User.Identity.IsAuthenticated)
+        {
+            <button id="signOut" class="buttonSubmit" style="border: 1px solid #6eb6cb; border-radius: 2px;" type="button">SIGN OUT</button>
+            <script>
+                $('#signOut').click(function () {
+                    location.href = '../Pages/SignOut';
+                })
+            </script>
+        }
+        else
+        {
+            <button id="signIn" class="buttonSubmit" type="button">SIGN IN</button>
+            <button id="reg" class="buttonSubmit" type="button">REGISTRATION</button>
+            <script>
+                $('#signIn').click(function () {
+                    location.href = '../Pages/SignIn';
+                });
+                $('#reg').click(function () {
+                    location.href = '../pages/ManageUsers';
+                });
+            </script>
+        }
+    </div>
+    <script>
+        $('#main').click(function () {
+            location.href = '../index';
+        });
+    </script>
+</div>

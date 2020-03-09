@@ -1,0 +1,13 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@{
+    Layout = "~/Layouts/_MainLayout.cshtml";
+}
+@RenderPage("~/Partials/_filter.cshtml")
+
+@{
+    var tags = DependencyResolver.TagBll.GetAllTags();
+}
+@foreach (var tag in tags)
+{
+    <div class="tagItem">@tag.Title</div>
+}

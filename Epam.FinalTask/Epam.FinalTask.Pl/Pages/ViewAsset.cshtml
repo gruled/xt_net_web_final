@@ -1,0 +1,147 @@
+﻿@using System.Diagnostics
+@using System.Text
+@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    Image image = new Image();
+    Asset asset = new Asset();
+    User parent = new User();
+    StringBuilder files = new StringBuilder();
+    StringBuilder tags = new StringBuilder();
+    if (IsPost)
+    {
+        try
+        {
+            var assetId = int.Parse(Request["id"]);
+            asset = DependencyResolver.AssetBll.GetAssetById(assetId);
+            image = DependencyResolver.ImageBll.GetImageById(DependencyResolver.AssetsAndImagesLinksBll.GetAllLinksByAssetId(assetId).FirstOrDefault().ImageId);
+            Page.Title = "Asset " + asset.Title;
+            parent = DependencyResolver.UserBll.GetUserById(asset.Parent);
+            foreach (var file in asset.Hierarchy.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                files.Append(file).Append(" | ");
+            }
+            var tagsAndAssets = DependencyResolver.AssetsAndTagsLinksBll.GetAllLinksByAssetId(assetId);
+            foreach (var tag in tagsAndAssets)
+            {
+                tags.Append(DependencyResolver.TagBll.GetTagById(tag.TagId).Title).Append(" | ");
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Load asset error",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+    }
+    else
+    {
+        Response.Redirect("~");
+    }
+    Layout = "~/Layouts/_MainLayout.cshtml";
+}
+@if (User.IsInRole("admin"))
+{
+    @RenderPage("~/Partials/_filter.cshtml");
+}
+
+<div class="userItem">
+    @if (image.Data != null)
+    {
+        <div style="text-align: center;"><img style="max-width: 100%; border-radius: 5px;" src="Data:image/png;base64,@Convert.ToBase64String(image.Data)" /></div>
+    }
+    else
+    {
+        <div style="text-align: center;"><img style="max-width: 100%; border-radius: 5px;" src="../Data/back.jpg" /></div>
+    }
+
+    <div class="assetItemTitle">@asset.Title</div>
+    @if (parent.Name != null)
+    {
+        <div style="text-align: center"><a style="font-family: sans-serif;" href="~/Pages/ViewUser.cshtml?view=@parent.Id">By @parent.Name</a></div>
+    }
+    <div style="text-align: center; margin: 20px auto;">
+        <div id="buttonDescription" class="assetItemMenu">DESCRIPTION</div>
+        <div id="buttonLicense" class="assetItemMenu">LICENSE</div>
+        <div id="buttonPatch" class="assetItemMenu">PATCH NOTE</div>
+        <div id="buttonDownload" class="assetItemMenu">DOWNLOAD</div>
+    </div>
+
+    <div id="assetContent">
+        <div class="assetItemInnerText">Description:<br />@asset.Description <br />Tags: @tags</div>
+    </div>
+    @if (User.IsInRole("admin") || User.Identity.Name.Equals(parent.Login))
+    {
+        <hr />
+        if (User.IsInRole("admin"))
+        {
+            if (!asset.Moderated)
+            {
+                <div id="buttonSetModerated" style="margin: 5px 5px;"><input class="buttonSubmit" type="submit" value="SET MODERATED" /></div>
+            }
+        }
+        <div id="buttonUpdate" style="margin: 5px 5px;">
+            <form method="post" action="UpdateAsset.cshtml">
+                <input type="text" name="id" value="@asset.Id" hidden />
+                <input class="buttonSubmit" type="submit" value="UPDATE" />
+            </form>
+        </div>
+        <div id="buttonDelete" style="margin: 5px 5px;"><input class="buttonSubmit" type="submit" value="DELETE" /></div>
+    }
+
+    <script>
+        $('#buttonSetModerated').click(function() {
+            $.ajax({
+                type: 'POST',
+                method: 'POST',
+                url: 'ModerateAsset.cshtml',
+                data: {
+                    id: '@asset.Id'
+                },
+                success: function(response) {
+                    if (response === 'ok') {
+                        document.getElementById('buttonSetModerated').remove();
+                    }
+                }
+            });
+        });
+        $('#buttonDelete').click(function() {
+            $.ajax({
+                type: 'POST',
+                method: 'POST',
+                url: 'DeleteAsset.cshtml',
+                data: {
+                    id: '@asset.Id'
+                },
+                success: function(response) {
+                    if (response === 'ok') {
+                        location.href = "../index";
+                    }
+                }
+            });
+        });
+
+
+        $('#buttonLicense').click(function() {
+            var block = document.getElementById('assetContent');
+            block.innerHTML = '<div class="assetItemInnerText">License:<br>@asset.License</div>';
+        });
+        $('#buttonDownload').click(function() {
+            var block = document.getElementById('assetContent');
+            var page =
+                '<div class="assetItemInnerText" style="margin-bottom:0px;">Size: @Tools.Variables.GetMemory(asset.Size)</div>' +
+                    '<div class="assetItemInnerText">Files: @files</div>' +
+                    '<div class="assetItemInnerText"> <a href="../Data/@asset.Path" download><button class="buttonSubmit">DOWNLOAD</button></a></div ';
+            block.innerHTML = page;
+        });
+        $('#buttonDescription').click(function() {
+            var block = document.getElementById('assetContent');
+            block.innerHTML =
+                '<div class="assetItemInnerText">Description:<br/>@asset.Description<br/>Tags: @tags</div>';
+        });
+        $('#buttonPatch').click(function() {
+            var block = document.getElementById('assetContent');
+            block.innerHTML = '<div class="assetItemInnerText">Version: @asset.Version<br>@asset.PatchNote</div>';
+        });
+    </script>
+</div>

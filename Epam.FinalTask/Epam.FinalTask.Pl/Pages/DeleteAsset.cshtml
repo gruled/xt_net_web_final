@@ -1,0 +1,30 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        try
+        {
+            var id = int.Parse(Request["id"]);
+            var assetsAndImages = DependencyResolver.AssetsAndImagesLinksBll.GetAllLinksByAssetId(id);
+            var asset = DependencyResolver.AssetBll.GetAssetById(id);
+            foreach (var item in assetsAndImages)
+            {
+                DependencyResolver.ImageBll.DeleteImageById(item.ImageId);
+            }
+            if (asset.Path!=null)
+            {
+                File.Delete(Server.MapPath("~/Data/")+asset.Path);   
+            }
+            DependencyResolver.AssetsAndImagesLinksBll.DeleteLinkByAssetId(id);
+            DependencyResolver.AssetsAndTagsLinksBll.DeleteLinkByAssetId(id);
+            DependencyResolver.AssetBll.DeleteAssetById(id);
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Delete asset error",e);
+            Response.Write("not ok");
+        }
+        Response.Write("ok");
+    }
+}

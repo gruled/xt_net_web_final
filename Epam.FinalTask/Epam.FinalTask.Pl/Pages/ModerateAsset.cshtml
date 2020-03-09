@@ -1,0 +1,18 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Pl.Models
+@{
+    if (IsAjax)
+    {
+        try
+        {
+            int id = int.Parse(Request["id"]);
+            DependencyResolver.AssetBll.ModerateAssetById(id);
+            Response.Write("ok");
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Moderate asset error",e);
+            Response.Write("not ok");
+        }
+    }
+}

@@ -1,0 +1,85 @@
+﻿@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    int assetId = int.Parse(Request["id"]);
+    Asset asset =new Asset();
+    try
+    {
+        asset = DependencyResolver.AssetBll.GetAssetById(assetId);
+    }
+    catch (Exception e)
+    {
+        Logger.Log.Error($"Get asset by id error (id={assetId})",e);
+        Response.Redirect("~/Pages/ErrorPage.cshtml");
+    }
+    List<int> tagsId =new List<int>();
+    if (IsPost)
+    {
+        try
+        {
+            Page.Title = "Update asset "+asset.Title;    
+            var tagsLinks = DependencyResolver.AssetsAndTagsLinksBll.GetAllLinksByAssetId(asset.Id);
+            foreach (var link in tagsLinks)
+            {
+                tagsId.Add(link.TagId);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("get links and asset error",e);
+            Response.Redirect("~/Pages/ErrorPage.cshtml");
+        }
+        
+    }
+    Page.Title = "Update asset";
+    Layout = "~/Layouts/_MainLayout.cshtml";
+}
+
+    <div class="userItem">
+        <div><label class="inlineItem text">Create new asset</label></div>
+        <form action="~/Pages/UpdateAssetLogic.cshtml" method="post" enctype="multipart/form-data">
+            <input type="text" name="id" value="@asset.Id" hidden />
+            <input type="text" name="parent" value="@asset.Parent" hidden/>
+            <div style="margin: 5px auto"><label class="inlineItem text">Title:</label><input style="margin-left: 50px; max-width: 602px;" type="text" name="title" size="100" required placeholder="Required field" pattern=".+" value="@asset.Title"/></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Version:</label><input style="margin-left: 26px; max-width: 602px;" type="text" name="version" size="100" required placeholder="Required field" pattern=".+" value="@asset.Version"/></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Description:</label><textarea required style="vertical-align: top; min-width: 600px; max-width: 600px; min-height: 25px;" name="description" >@asset.Description</textarea></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">License:</label><textarea required style="vertical-align: top; margin-left: 24px; min-width: 600px; max-width: 600px; min-height: 25px;" name="license">@asset.License</textarea></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Patch note:</label><textarea required style="vertical-align: top; margin-left: 3px; min-width: 600px; max-width: 600px; min-height: 25px;" name="patchNote">@asset.PatchNote</textarea></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">File(max 64 mb):</label><input id="file" style="margin-left: 15px;" type="file" name="file"  accept="application/zip"/></div>
+            <div style="margin: 5px auto"><label class="inlineItem text">Image(max 8 mb):</label><input id="image" style="margin-left: 5px;" type="file" name="image" accept="image/jpeg,image/png" /></div>
+            <div style="margin: 5px auto">
+                <label class="inlineItem text" style="vertical-align: top">Category:</label>
+                @{
+                    IEnumerable<Tag> tags = new List<Tag>();
+                    try
+                    {
+                        tags = DependencyResolver.TagBll.GetAllTags();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Log.Error("Get all tags error",e);
+                        Response.Redirect("~/Pages/ErrorPage.cshtml");
+                    }
+                    int count = tags.Count() / 3 * 2;
+                }
+                @if (tags.Any())
+                {
+                    <select class="buttonSelect" style="margin-left: 62px;" multiple name="tags[]" size="@count" required>
+                        @foreach (var tag in tags)
+                        {
+                            if (tagsId.Contains(tag.Id))
+                            {
+                                <option value="@tag.Id" selected>@tag.Title</option>   
+                            }
+                            else
+                            {
+                                <option value="@tag.Id">@tag.Title</option>
+                            }
+                        }
+                    </select>
+                }
+            </div>
+            <div style="margin: 5px 5px;"><input class="buttonSubmit" type="submit" value="UPDATE" /></div>
+        </form>
+    </div>

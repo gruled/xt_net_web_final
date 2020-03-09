@@ -1,0 +1,70 @@
+﻿@using System.Collections
+@using Epam.FinalTask.DependencyResolver
+@using Epam.FinalTask.Entities
+@using Epam.FinalTask.Pl.Models
+@{
+    Layout = "~/Layouts/_MainLayout.cshtml";
+}
+@RenderPage("~/Partials/_filter.cshtml")
+@{
+    if (IsPost)
+    {
+        try
+        {
+            var id = int.Parse(Request["id"]);
+            var value = Request["title"];
+            DependencyResolver.TagBll.UpdateTagById(id, new Tag() { Title = value });
+        }
+        catch (Exception e)
+        {
+            Logger.Log.Error("Update tag error",e);
+        }
+        Response.Redirect("~/Pages/ManageTag.cshtml");
+    }
+    IEnumerable<Tag> tags = new List<Tag>();
+    try
+    {
+        tags = DependencyResolver.TagBll.GetAllTags();
+    }
+    catch (Exception e)
+    {
+        Logger.Log.Error("get all tags error",e);
+    }
+}
+<div class="tagItem">
+    <h3 class="tagItemTitle">CREATE</h3>
+    <form method="post" action="~/Pages/CreateTag.cshtml" style="margin-bottom: 10px;">
+        <input type="text" style="height: 19px; max-width: 150px;" size="100" name="title" required pattern=".+" />
+        <input class="buttonSubmit" type="submit" value="CREATE" />
+    </form>
+</div>
+
+@foreach (var tag in tags)
+{
+    <div id="@tag.Id" class="tagItem">
+        <div class="tagItemInline"><h3 class="tagItemTitle">@tag.Title.ToUpper()</h3></div>
+        <div class="tagItemInline">
+            <div class="tagItemBlock">
+                <form method="post" action="~/Pages/ManageTag.cshtml">
+                    <input type="text" value="@tag.Id" name="id" hidden />
+                    <input style="display: inline; height: 19px;  max-width: 150px;"  size="100"type="text" value="@tag.Title"  name="title" required />
+                    <input class="buttonSubmit" style="display: inline;" type="submit" value="CHANGE" />
+                </form>
+            </div>
+            <div class="tagItemBlock">
+                @{ string s = $"delete{tag.Id}";}
+                <input id="@s" class="buttonSubmit" style="margin: 5px auto;" type="submit" value="DELETE"/>
+                <script>
+                    $('#@s').click(function() {
+                        var tagNode = @tag.Id;
+                        $.ajax({ method: 'POST', url: '/Pages/DeleteTag/cshtml', data: { id: tagNode }, success: [
+                            function() {
+                                document.getElementById(tagNode).remove();
+                            }
+                        ] });
+                    })
+                </script>
+            </div>
+        </div>
+    </div>
+}
